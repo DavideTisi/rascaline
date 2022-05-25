@@ -27,6 +27,11 @@ fn m_1_pow(l: usize) -> f64 {
     }
 }
 
+/// `\sqrt{2}`
+const SQRT_2: f64 = 1.4142135623730951;
+/// `4\pi`
+const CONST_4PI: f64 = 12.566370614359172;
+
 #[derive(Debug, Clone, Copy)]
 #[derive(serde::Deserialize, serde::Serialize, schemars::JsonSchema)]
 /// Radial basis that can be used in the spherical expansion
@@ -570,6 +575,8 @@ impl SphericalExpansion {
             let n = feature[2].usize();
 
             let n_l_m_value = f_scaling
+                * CONST_4PI /// missing factor from angular integration
+                * SQRT_2 /// compensate for missing factor of sqrt(2) in Y_lm 
                 * radial_integral.values[[n, l]]
                 * spherical_harmonics.values[[l as isize, m]];
 
