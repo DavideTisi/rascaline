@@ -117,7 +117,7 @@ impl GtoRadialIntegral {
 
         let gaussian_normalization = gto_gaussian_widths.iter()
             .zip(0..parameters.max_radial)
-            .map(|(sigma, n)| PI_TO_THREE_HALF * 0.25 * f64::sqrt(2.0 / (sigma.powi(2 * n as i32 + 3) * gamma(n as f64 + 1.5))))
+            .map(|(sigma, n)| f64::sqrt(2.0 / (sigma.powi(2 * n as i32 + 3) * gamma(n as f64 + 1.5))))
             .collect::<Vec<_>>();
 
         let mut overlap = na::DMatrix::from_element(
