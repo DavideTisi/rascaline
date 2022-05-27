@@ -11,6 +11,8 @@ use crate::Error;
 use super::RadialIntegral;
 use super::{HyperGeometricSphericalExpansion, HyperGeometricParameters};
 
+const SQRT_PI_OVER_4: f64 = 0.44311346272637897;
+
 /// Parameters controlling GTO radial basis
 #[derive(Debug, Clone, Copy)]
 pub struct GtoParameters {
@@ -216,6 +218,16 @@ impl RadialIntegral for GtoRadialIntegral {
         };
         self.hypergeometric.compute(distance, hyperg_parameters, values.view_mut(), gradients.as_mut().map(|g| g.view_mut()));
 
+        // Define global factor of radial integral arising from two parts:
+        // - a global factor of sqrt(pi)/4 from the integral itself
+        // - the normalization constant of the atomic Gaussian density.
+        //   We use a factor of 1/(pi*sigma^2)^0.75 which leads to 
+        //   Gaussian densities that are normalized in the L2-sense, i.e.
+        //   integral_{R^3} |g(r)|^2 d^3r = 1.
+        let atomic_sigma_sq = 0.5 / self.atomic_gaussian_constant;
+        let atomic_gaussian_normalization = (std::f64::consts::PI * atomic_sigma_sq).powf(-0.75);
+        let global_factor = SQRT_PI_OVER_4 * atomic_gaussian_normalization;
+                
         let c = self.atomic_gaussian_constant;
         let c_rij = c * distance;
 
@@ -230,9 +242,9 @@ impl RadialIntegral for GtoRadialIntegral {
                 let factor = c_rij_l * c_dn;
                 c_rij_l *= c_rij;
 
-                values[[n, l]] *= factor;
+                values[[n, l]] *= global_factor * factor;
                 if let Some(ref mut gradients) = gradients {
-                    gradients[[n, l]] *= factor;
+                    gradients[[n, l]] *= global_factor * factor;
                     gradients[[n, l]] += values[[n, l]] * l as f64 / distance;
                 }
             }
@@ -255,6 +267,7 @@ impl RadialIntegral for GtoRadialIntegral {
                         let factor = c * c_dn;
 
                         gradients[[n, l]] = gamma(a) / gamma(b) * factor;
+                        gradients[[n, l]] *= global_factor;
                     }
                 }
             }
@@ -390,7 +403,7 @@ mod tests {
 
         assert_relative_eq!(
             gradients, gradients_plus,
-            epsilon=1e-9, max_relative=1e-6,
+            epsilon=1e-8, max_relative=1e-6,
         );
     }
 
