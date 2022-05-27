@@ -569,7 +569,15 @@ impl SphericalExpansion {
             let m = feature[1].isize();
             let n = feature[2].usize();
 
+            /// The first factor of 4pi arises from the integration over
+            /// the angular variables. It is included here as a global
+            /// factor since it is not part of the spherical harmonics,
+            /// and to keep the radial_integral class about the radial
+            /// part of the integration only. 
+            /// For more details on the derivation, it is the first factor in
+            /// https://lab-cosmo.github.io/librascal/SOAP.html#density-coefficients-radial-integration
             let n_l_m_value = f_scaling
+                * 4.0 * std::f64::consts::PI
                 * radial_integral.values[[n, l]]
                 * spherical_harmonics.values[[l as isize, m]];
 
@@ -693,6 +701,11 @@ impl SphericalExpansion {
                 gradients[feature_i] = f_scaling_grad * dr_d_spatial * ri_value * sph_value
                                      + f_scaling * ri_grad * dr_d_spatial * sph_value
                                      + f_scaling * ri_value * sph_grad / pair.distance;
+                
+                /// Multiply by a global factor of 4pi to match the global
+                /// factor in the features. See the relevant comments in
+                /// the part defining the variable n_l_m_value for details.
+                gradients[feature_i] *= 4.0 * std::f64::consts::PI;
             }
         }
 
