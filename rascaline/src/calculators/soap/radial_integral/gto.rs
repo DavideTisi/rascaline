@@ -12,6 +12,8 @@ use super::RadialIntegral;
 use super::{HyperGeometricSphericalExpansion, HyperGeometricParameters};
 
 const PI_TO_THREE_HALF: f64 = 15.503138340149908;
+const PI: f64 = 3.1415926535897931;
+const SQRT_PI_OVER_4: f64 = 0.44311346272637897;
 
 /// Parameters controlling GTO radial basis
 #[derive(Debug, Clone, Copy)]
@@ -127,6 +129,7 @@ impl GtoRadialIntegral {
         for n1 in 0..parameters.max_radial {
             let sigma1 = gto_gaussian_widths[n1];
             let sigma1_sq = sigma1 * sigma1;
+
             for n2 in n1..parameters.max_radial {
                 let sigma2 = gto_gaussian_widths[n2];
                 let sigma2_sq = sigma2 * sigma2;
@@ -213,10 +216,16 @@ impl RadialIntegral for GtoRadialIntegral {
             gto_gaussian_constants: &self.gto_gaussian_constants,
         };
         self.hypergeometric.compute(distance, hyperg_parameters, values.view_mut(), gradients.as_mut().map(|g| g.view_mut()));
+        
+        /// Define global factor arising from radial integration as well
+        /// as the normalization of the Gaussian density. 
+        let atomic_sigma_sq = 0.5 / self.atomic_gaussian_constant;
+        let atomic_gaussian_normalization = (PI * atomic_sigma_sq).powf(-0.75);
+        let global_factor = SQRT_PI_OVER_4 * atomic_gaussian_normalization;
 
+        /// Start evaluating the coefficients for all (n,l)
         let c = self.atomic_gaussian_constant;
         let c_rij = c * distance;
-
         for n in 0..self.parameters.max_radial {
             let gto_constant = self.gto_gaussian_constants[n];
             // `(c * rij)^l`
@@ -228,9 +237,9 @@ impl RadialIntegral for GtoRadialIntegral {
                 let factor = c_rij_l * c_dn;
                 c_rij_l *= c_rij;
 
-                values[[n, l]] *= factor;
+                values[[n, l]] *= global_factor * factor;
                 if let Some(ref mut gradients) = gradients {
-                    gradients[[n, l]] *= factor;
+                    gradients[[n, l]] *= global_factor * factor;
                     gradients[[n, l]] += values[[n, l]] * l as f64 / distance;
                 }
             }
