@@ -11,6 +11,8 @@ const SQRT_1_OVER_4PI: f64 = 0.28209479177387814;
 const SQRT_3: f64 = 1.7320508075688772;
 /// `\sqrt{3 / 2}`
 const SQRT_3_OVER_2: f64 = 1.224744871391589;
+/// `4\pi`
+const CONST_4PI: f64 = 12.566370614359172;
 
 /// Array storing data for `0 <= l <= l_max`, `0 <= m <= l`. This type
 /// implements `Index<[usize; 2]>` and `IndexMut<[usize; 2]>` to allow writing

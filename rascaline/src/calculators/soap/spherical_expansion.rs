@@ -27,11 +27,6 @@ fn m_1_pow(l: usize) -> f64 {
     }
 }
 
-/// `\sqrt{2}`
-const SQRT_2: f64 = 1.4142135623730951;
-/// `4\pi`
-const CONST_4PI: f64 = 12.566370614359172;
-
 #[derive(Debug, Clone, Copy)]
 #[derive(serde::Deserialize, serde::Serialize, schemars::JsonSchema)]
 /// Radial basis that can be used in the spherical expansion
@@ -574,9 +569,21 @@ impl SphericalExpansion {
             let m = feature[1].isize();
             let n = feature[2].usize();
 
+            /// Global prefactors:
+            /// 1.4141... = sqrt(2) arising from spherical harmonics
+            /// normalized differently. This factor should directly be
+            /// included in the definition of the spherical harmonics.
+            /// 12.566... = 4PI, arising from the angular integration.
+            /// Given that this part is a "true" global factor, it would
+            /// make sense to really explicitly include it here from the
+            /// "close to analytical evaluation" point of view.
+            /// If the extra computational cost due to this factor (or just
+            /// the elegance of the implementation) suffers too much from
+            /// this, it might also be possible to include this in the 
+            /// radial integral. 
             let n_l_m_value = f_scaling
-                * CONST_4PI /// missing factor from angular integration
-                * SQRT_2 /// compensate for missing factor of sqrt(2) in Y_lm 
+                * 1.4142135623730951
+                * 12.566370614359172 
                 * radial_integral.values[[n, l]]
                 * spherical_harmonics.values[[l as isize, m]];
 
